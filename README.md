@@ -3,7 +3,7 @@ The public modules xelA uses for different tasks
 
 # Modified files from original
 - lavalink.py
-  - Soruce from https://github.com/Devoxin/Lavalink.py
+  - Source from https://github.com/Devoxin/Lavalink.py
 
 
 - duckduckgo.py
