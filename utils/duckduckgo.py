@@ -26,7 +26,9 @@ async def search(query: str, locale="uk-en", timeout=30, proxy=None, count=3, sa
         p = await page.read()
 
         parse = BeautifulSoup(p, 'html.parser')
-        parse.find('div', attrs={'class': 'result--ad'}).decompose()  # Ad-block
+        ads = parse.find('div', attrs={'class': 'result--ad'})
+        if ads:
+            ads.decompose()
         results = parse.findAll('div', attrs={'class': 'result__body'})
 
         res = []
