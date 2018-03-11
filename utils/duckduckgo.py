@@ -26,6 +26,7 @@ async def search(query: str, locale="uk-en", timeout=30, proxy=None, count=3, sa
         p = await page.read()
 
         parse = BeautifulSoup(p, 'html.parser')
+        parse.find('div', attrs={'class': 'result--ad'}).decompose()  # Ad-block
         results = parse.findAll('div', attrs={'class': 'result__body'})
 
         res = []
@@ -37,7 +38,8 @@ async def search(query: str, locale="uk-en", timeout=30, proxy=None, count=3, sa
             anchor = result.find('a')
             title = anchor.get_text()
             url = anchor.get('href')
-            description = result.find(class_='result__snippet').get_text()
+            description = result.find(class_='result__snippet')
+            description = 'No description available' if not description else description.get_text()
             sr = SearchResult(title, description, url)
             res.append(sr)
 
