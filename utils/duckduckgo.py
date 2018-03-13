@@ -50,8 +50,7 @@ async def search(query: str, locale="uk-en", timeout=30, proxy=None, count=3, sa
             return res
 
         for result in results[:count]:
-            anchor = result.find(class_='result__title')
-            title = anchor.get_text()
+            title = result.find(class_='result__a').get_text()
             url = result.find(class_='result__url').get('href')
             description = result.find(class_='result__snippet')
             description = 'No description available' if not description else description.get_text()
