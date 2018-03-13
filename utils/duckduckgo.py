@@ -1,4 +1,5 @@
 import aiohttp
+import json
 
 from urllib.parse import quote
 from bs4 import BeautifulSoup
@@ -14,21 +15,33 @@ class SearchResult:
         self.url = url
 
 
+class CurrencyResult:
+    def __init__(self, fromvalue, fromsymbol, fromname, tovalue, tosymbol, toname):
+        self.fromvalue = fromvalue
+        self.fromsymbol = fromsymbol
+        self.fromname = fromname
+        self.tovalue = tovalue
+        self.tosymbol = tosymbol
+        self.toname = toname
+
+
 async def search(query: str, locale="uk-en", timeout=30, proxy=None, count=3, safe=-2):
     if not query:
         raise ValueError("query must be defined")
 
     async with _http.get(f"https://duckduckgo.com/html/?q={quote(query)}&kr={locale}&kp={safe}",
-                         timeout=timeout,
-                         proxy=proxy,
+                         timeout=timeout, proxy=proxy,
                          headers={'User-Agent': _user_agent}) as page:
 
         p = await page.read()
 
         parse = BeautifulSoup(p, 'html.parser')
-        ads = parse.find('div', attrs={'class': 'result--ad'})
+        ads = parse.findAll('div', attrs={'class': 'result--ad'})
+
         if ads:
-            ads.decompose()
+            for x in ads:
+                x.decompose()
+
         results = parse.findAll('div', attrs={'class': 'result__body'})
 
         res = []
@@ -37,15 +50,43 @@ async def search(query: str, locale="uk-en", timeout=30, proxy=None, count=3, sa
             return res
 
         for result in results[:count]:
-            anchor = result.find('a')
+            anchor = result.find(class_='result__title')
             title = anchor.get_text()
-            url = anchor.get('href')
+            url = result.find(class_='result__url').get('href')
             description = result.find(class_='result__snippet')
             description = 'No description available' if not description else description.get_text()
             sr = SearchResult(title, description, url)
             res.append(sr)
 
         return res
+
+
+async def currency(amount: str, fromvaluein: str, tovaluein: str, timeout=30, proxy=None):
+    if not amount or not fromvaluein or not tovaluein:
+        raise ValueError("Amount, From and To value must be defined")
+
+    async with _http.get(f"https://duckduckgo.com/js/spice/currency/{amount}/{fromvaluein}/{tovaluein}",
+                         timeout=timeout, proxy=proxy,
+                         headers={'User-Agent': _user_agent}) as page:
+
+        output = await page.text()
+        final = output.replace("ddg_spice_currency(", "").replace(");", "")
+        p = json.loads(final)
+
+        error = p["headers"]["description"]
+        result = p["conversion"]
+
+        if error:
+            raise ValueError(error)
+
+        return CurrencyResult(
+            fromvalue=result["from-amount"],
+            fromsymbol=result["from-currency-symbol"],
+            fromname=result["from-currency-name"],
+            tovalue=result["converted-amount"],
+            tosymbol=result["to-currency-symbol"],
+            toname=result["to-currency-name"]
+        )
 
 
 def _shutdown():
