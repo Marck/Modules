@@ -4,7 +4,6 @@ import json
 from urllib.parse import quote
 from bs4 import BeautifulSoup
 
-_http = aiohttp.ClientSession()
 _user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36"
 
 
@@ -29,9 +28,9 @@ async def search(query: str, locale="uk-en", timeout=30, proxy=None, count=3, sa
     if not query:
         raise ValueError("query must be defined")
 
-    async with _http.get(f"https://duckduckgo.com/html/?q={quote(query)}&kr={locale}&kp={safe}",
-                         timeout=timeout, proxy=proxy,
-                         headers={'User-Agent': _user_agent}) as page:
+    async with aiohttp.ClientSession().get(f"https://duckduckgo.com/html/?q={quote(query)}&kr={locale}&kp={safe}",
+                                           timeout=timeout, proxy=proxy,
+                                           headers={'User-Agent': _user_agent}) as page:
 
         p = await page.read()
 
@@ -64,9 +63,9 @@ async def currency(amount: str, fromvaluein: str, tovaluein: str, timeout=30, pr
     if not amount or not fromvaluein or not tovaluein:
         raise ValueError("Amount, From and To value must be defined")
 
-    async with _http.get(f"https://duckduckgo.com/js/spice/currency/{amount}/{fromvaluein}/{tovaluein}",
-                         timeout=timeout, proxy=proxy,
-                         headers={'User-Agent': _user_agent}) as page:
+    async with aiohttp.ClientSession().get(f"https://duckduckgo.com/js/spice/currency/{amount}/{fromvaluein}/{tovaluein}",
+                                           timeout=timeout, proxy=proxy,
+                                           headers={'User-Agent': _user_agent}) as page:
 
         output = await page.text()
         final = output.replace("ddg_spice_currency(", "").replace(");", "")
@@ -89,4 +88,4 @@ async def currency(amount: str, fromvaluein: str, tovaluein: str, timeout=30, pr
 
 
 def _shutdown():
-    _http.close()
+    aiohttp.ClientSession().close()

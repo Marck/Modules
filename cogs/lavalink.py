@@ -15,20 +15,22 @@ def mstomin(input):
 class Music:
     def __init__(self, bot):
         self.bot = bot
-        lavalink.Client(bot=self.bot, port=1420, password='youshallnotpass', loop=self.bot.loop)
-        self.bot.lavalink.client.register_hook(self.track_hook)
-        # As of 2.0, lavalink.Client will be available via self.bot.lavalink.client
 
-    async def track_hook(self, player, event):
-        if event == 'TrackStartEvent':
-            c = player.fetch('channel')
+        if not hasattr(bot, 'lavalink'):
+            lavalink.Client(bot=self.bot, ws_port=1420, password='youshallnotpass', loop=self.bot.loop)
+            self.bot.lavalink.register_hook(self.track_hook)
+
+    async def track_hook(self, event):
+        if isinstance(event, lavalink.Events.TrackStartEvent):
+            c = event.player.fetch('channel')
             if c:
                 c = self.bot.get_channel(c)
                 if c:
-                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Now Playing', description=player.current.title)
+                    embed = discord.Embed(colour=c.guild.me.top_role.colour, title='Now Playing', description=event.track.title)
+                    embed.set_thumbnail(url=event.track.thumbnail)
                     await c.send(embed=embed)
-        elif event == 'QueueEndEvent':
-            c = player.fetch('channel')
+        elif isinstance(event, lavalink.Events.QueueEndEvent):
+            c = event.player.fetch('channel')
             if c:
                 c = self.bot.get_channel(c)
                 if c:
@@ -57,7 +59,7 @@ class Music:
         if not query.startswith('http'):
             query = f'ytsearch:{query}'
 
-        tracks = await self.bot.lavalink.client.get_tracks(query)
+        tracks = await self.bot.lavalink.get_tracks(query)
 
         if not tracks:
             return await ctx.send('Nothing found 👀')
@@ -207,16 +209,14 @@ class Music:
 
     @commands.command()
     async def repeat(self, ctx):
-        await ctx.send('Command pending rewrite.')
+        player = self.bot.lavalink.players.get(ctx.guild.id)
 
-        # player = self.bot.lavalink.players.get(ctx.guild.id)
+        if not player.is_playing:
+            return await ctx.send('Nothing playing.')
 
-        # if not player.is_playing:
-        #     return await ctx.send('Nothing playing.')
+        player.repeat = not player.repeat
 
-        # player.repeat = not player.repeat
-
-        # await ctx.send('🔁 | Repeat ' + ('enabled' if player.repeat else 'disabled'))
+        await ctx.send('🔁 | Repeat ' + ('enabled' if player.repeat else 'disabled'))
 
     @commands.command()
     async def remove(self, ctx, index: int):
@@ -238,7 +238,7 @@ class Music:
         if not query.startswith('ytsearch:') and not query.startswith('scsearch:'):
             query = 'ytsearch:' + query
 
-        tracks = await self.bot.lavalink.client.get_tracks(query)
+        tracks = await self.bot.lavalink.get_tracks(query)
 
         if not tracks:
             return await ctx.send('Nothing found')
@@ -270,7 +270,3 @@ class Music:
 
 def setup(bot):
     bot.add_cog(Music(bot))
-
-
-def teardown(bot):
-    bot.lavalink.client.destroy()
