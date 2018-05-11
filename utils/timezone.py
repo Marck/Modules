@@ -16,10 +16,15 @@ async def getlocation(location, key):
 
     geo = geojs["results"][0]["geometry"]["location"]
     geoloc = geojs["results"][0]["formatted_address"]
+    try:
+        country_code = geojs["results"][0]["address_components"][2]["short_name"]
+    except IndexError:
+        country_code = geojs["results"][0]["address_components"][0]["short_name"]
 
     return dict.JsonDict({
         "lat": geo['lat'],
         "lng": geo['lng'],
+        "country_code": country_code,
         "location": geoloc
     })
 
@@ -37,6 +42,7 @@ async def currenttime(location, key):
 
     return dict.JsonDict({
         "time": newtime,
+        "country_code": cords.country_code,
         "timetext": newtime.strftime('%A, %d %B %Y %H:%M'),
         "location": cords.location,
         "timezone": locjs['timeZoneName']
