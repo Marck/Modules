@@ -16,10 +16,12 @@ async def getlocation(location, key):
 
     geo = geojs["results"][0]["geometry"]["location"]
     geoloc = geojs["results"][0]["formatted_address"]
-    try:
-        country_code = geojs["results"][0]["address_components"][2]["short_name"]
-    except IndexError:
-        country_code = geojs["results"][0]["address_components"][0]["short_name"]
+
+    # Just TRY till you get it
+    shortfind = geojs["results"][0]["address_components"]
+    for g in shortfind:
+        if len(g["short_name"]) == 2:
+            country_code = g["short_name"]
 
     return dict.JsonDict({
         "lat": geo['lat'],
