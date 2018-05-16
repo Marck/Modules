@@ -1,15 +1,7 @@
 import json
 import urllib
 
-from utils import http
-
-
-class JsonDict:
-    def __init__(self, my_dict: dict):
-        self._dict = my_dict
-
-    def __getattr__(self, key):
-        return self._dict.get(key, None)
+from utils import http, dict
 
 
 async def getcords(address, key):
@@ -25,9 +17,14 @@ async def getcords(address, key):
 
     geometry = results["geometry"]["viewport"]["northeast"]
     address = results["formatted_address"]
-    country_code = results["address_components"][2]["short_name"]
 
-    return JsonDict({
+    # Just TRY till you get it
+    shortfind = results["address_components"]
+    for g in shortfind:
+        if len(g["short_name"]) == 2:
+            country_code = g["short_name"]
+
+    return dict.JsonDict({
         "country_code": country_code,
         "address": address,
         "geometry": geometry,
@@ -49,13 +46,13 @@ async def getweather(address, key, gmapskey, unit="ca"):
     except json.JSONDecodeError:
         raise json.JSONDecodeError("The API didn't give any response")
 
-    return JsonDict({
+    return dict.JsonDict({
         "country_code": cords.country_code,
         "address": cords.address,
-        "currently": JsonDict(r["currently"]),
-        "one": JsonDict(r["daily"]["data"][0]),
-        "two": JsonDict(r["daily"]["data"][1]),
-        "three": JsonDict(r["daily"]["data"][2]),
-        "four": JsonDict(r["daily"]["data"][3]),
-        "five": JsonDict(r["daily"]["data"][4]),
+        "currently": dict.JsonDict(r["currently"]),
+        "one": dict.JsonDict(r["daily"]["data"][0]),
+        "two": dict.JsonDict(r["daily"]["data"][1]),
+        "three": dict.JsonDict(r["daily"]["data"][2]),
+        "four": dict.JsonDict(r["daily"]["data"][3]),
+        "five": dict.JsonDict(r["daily"]["data"][4]),
     })
